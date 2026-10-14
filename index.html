@@ -271,14 +271,17 @@
 
     <div class="card">
       <h2>💾 保存 / 子どもへの配布</h2>
-      <p class="hint">この端末に保存すると、こどもモードにすぐ反映されます。「あいことば」で他の端末にも同じ設定を配れます。</p>
+      <p class="hint">設定はこの端末にだけ保存されます。子どもの端末には「配布用リンク」を送ってください（開くだけで同じ設定になります）。</p>
       <div class="toolbar">
         <button class="btn small" onclick="saveSettings()">この端末に保存</button>
-        <button class="btn small ghost" onclick="makeCode()">あいことばを発行</button>
+        <button class="btn small ghost" onclick="makeCode()">配布用リンクを発行</button>
         <button class="btn small ghost" onclick="loadCodePrompt()">あいことばで読み込む</button>
       </div>
       <div id="codeBox" class="hidden" style="margin-top:12px">
-        <label class="field">あいことば（コピーして子どもに渡す）</label>
+        <label class="field">🔗 配布用リンク（これを子どもに送る。開くだけで先生の設定になります）</label>
+        <textarea id="linkOut" rows="3" readonly onclick="this.select()"></textarea>
+        <div class="toolbar" style="margin-top:6px"><button class="btn small" onclick="copyLink()">リンクをコピー</button></div>
+        <label class="field">あいことば（リンクが使えないとき用）</label>
         <textarea id="codeOut" rows="3" readonly onclick="this.select()"></textarea>
       </div>
     </div>
@@ -622,11 +625,18 @@ function makeCode(){
   collectFromTeacherUI();
   const code="MONO1-"+btoa(unescape(encodeURIComponent(JSON.stringify(settings))));
   document.getElementById('codeBox').classList.remove('hidden');
-  document.getElementById('codeOut').value=code; flash("あいことばを発行しました");
+  document.getElementById('codeOut').value=code;
+  document.getElementById('linkOut').value=location.origin+location.pathname+'?code='+encodeURIComponent(code);
+  localStorage.setItem(KEY,JSON.stringify(settings));
+  flash("配布用リンクを発行しました");
+}
+function copyLink(){
+  const t=document.getElementById('linkOut');
+  (navigator.clipboard?navigator.clipboard.writeText(t.value):Promise.reject()).then(()=>flash("コピーしました"),()=>{t.select();document.execCommand('copy');flash("コピーしました");});
 }
 function loadCode(code){
   try{
-    const data=JSON.parse(decodeURIComponent(escape(atob(code.replace(/^MONO1-/,'').trim()))));
+    const data=JSON.parse(decodeURIComponent(escape(atob(code.trim().replace(/^MONO1-/,'').replace(/ /g,'+')))));
     applyLoaded(data);
     localStorage.setItem(KEY,JSON.stringify(settings));
     grade=settings.grade;
